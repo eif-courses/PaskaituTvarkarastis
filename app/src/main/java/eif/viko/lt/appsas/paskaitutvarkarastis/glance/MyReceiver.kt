@@ -1,12 +1,18 @@
 package eif.viko.lt.appsas.paskaitutvarkarastis.glance
 
 import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.Button
 import androidx.glance.GlanceId
@@ -41,9 +47,13 @@ object TimetableWidget : GlanceAppWidget() {
 
     val countKey = stringPreferencesKey("count")
 
+    //    var selectedDateIndex by remember { mutableStateOf(0) }
+    val dateIndexKey = intPreferencesKey("dateIndex")
+
     @Composable
     fun Content() {
         val count = currentState(key = countKey) ?: "nera paskaitų"
+        val dateIndex = currentState(key = dateIndexKey) ?: 1
         val gson = Gson()
 
         Column(
@@ -52,7 +62,6 @@ object TimetableWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
-
 
             Button(
                 text = "Atnaujinti tvarkaraštį",
@@ -63,12 +72,29 @@ object TimetableWidget : GlanceAppWidget() {
             if (count != "nera paskaitų") {
                 val lecturesDtos = gson.fromJson(count, Array<LecturesDto>::class.java)
 
-               // val lecturesByDate = lecturesDtos.groupBy { it.date }
+
+                Button(
+                    text = "Previous day",
+                    onClick = actionRunCallback(SelectPreviousDateActionCallback::class.java)
+                )
+                Spacer(modifier = GlanceModifier.height(16.dp))
+
+                Button(
+                    text = "Next day",
+                    onClick = actionRunCallback(SelectNextDateActionCallback::class.java)
+                )
+                Spacer(modifier = GlanceModifier.height(16.dp))
+
+                val selectedDate = lecturesDtos.getOrNull(dateIndex)?.date ?: ""
+                val filteredLectures = lecturesDtos.filter { it.date == selectedDate }
+
+
+                println(dateIndex)
 
                 LazyColumn(
                     modifier = GlanceModifier.fillMaxSize()
                 ) {
-                    val groupedLectures = lecturesDtos.groupBy { it.date }
+                    val groupedLectures = filteredLectures.groupBy { it.date }
 
                     groupedLectures.keys.forEach { date ->
                         val lecturesForDate = groupedLectures[date] ?: emptyList()
@@ -83,7 +109,7 @@ object TimetableWidget : GlanceAppWidget() {
                         }
 
                         // Print lectures for the current date
-                        itemsIndexed(lecturesForDate) {index, lecture ->
+                        itemsIndexed(lecturesForDate) { index, lecture ->
                             Text(
                                 text = "${lecture.subjectid} | ${lecture.classids.joinToString()} | ${lecture.starttime}-${lecture.endtime}",
                             )
@@ -92,15 +118,34 @@ object TimetableWidget : GlanceAppWidget() {
                 }
 
 
-//                LazyColumn {
-//                    item {
-//                        Text("Names:")
-//                    }
-//                    // or in case you need the index:
-//                    itemsIndexed(lecturesDtos) { index, lecture ->
-//                        Text("${lecture.subjectid} | ${lecture.classids}| ${lecture.starttime}-${lecture.endtime}")
+//                LazyColumn(
+//                    modifier = GlanceModifier.fillMaxSize()
+//                ) {
+//                    val groupedLectures = lecturesDtos.groupBy { it.date }
+//
+//                    groupedLectures.keys.forEach { date ->
+//                        val lecturesForDate = groupedLectures[date] ?: emptyList()
+//                        val parsedDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date)
+//                        val weekday = SimpleDateFormat("EEEE", Locale.US).format(parsedDate)
+//
+//                        // Print date header
+//                        item {
+//                            Text(
+//                                text = "Date: $date ($weekday)"
+//                            )
+//                        }
+//
+//                        // Print lectures for the current date
+//                        itemsIndexed(lecturesForDate) {index, lecture ->
+//                            Text(
+//                                text = "${lecture.subjectid} | ${lecture.classids.joinToString()} | ${lecture.starttime}-${lecture.endtime}",
+//                            )
+//                        }
 //                    }
 //                }
+
+
+//
             }
 
         }
@@ -134,6 +179,44 @@ class TimetableMyReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget
         get() = TimetableWidget
 }
+
+// TODO fix callback he***l state update
+class SelectPreviousDateActionCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        updateAppWidgetState(context, glanceId) { prefs ->
+            val currentDate = prefs[TimetableWidget.dateIndexKey]
+            if ((currentDate != null) && (currentDate > 0)) {
+                prefs[TimetableWidget.dateIndexKey] = currentDate - 1
+            }else{
+                prefs[TimetableWidget.dateIndexKey] = 1
+            }
+        }
+        TimetableWidget.update(context, glanceId)
+    }
+}
+
+class SelectNextDateActionCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        updateAppWidgetState(context, glanceId) { prefs ->
+            val currentDate = prefs[TimetableWidget.dateIndexKey]
+            if (currentDate != null) { // TODO get lecturesDtos.size-1
+                prefs[TimetableWidget.dateIndexKey] = currentDate + 1
+            }else{
+                prefs[TimetableWidget.dateIndexKey] = 1
+            }
+        }
+        TimetableWidget.update(context, glanceId)
+    }
+}
+
 
 class IncrementActionCallback : ActionCallback {
 
