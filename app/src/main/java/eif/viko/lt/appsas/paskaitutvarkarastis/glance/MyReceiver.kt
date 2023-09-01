@@ -12,11 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.glance.Button
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -33,17 +37,22 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.height
+import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.google.gson.Gson
+import eif.viko.lt.appsas.paskaitutvarkarastis.MainDataStorage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 object TimetableWidget : GlanceAppWidget() {
+
 
     val countKey = stringPreferencesKey("count")
 
@@ -178,6 +187,8 @@ object TimetableWidget : GlanceAppWidget() {
 class TimetableMyReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget
         get() = TimetableWidget
+
+
 }
 
 // TODO fix callback he***l state update
@@ -232,7 +243,18 @@ class IncrementActionCallback : ActionCallback {
             .build()
 
         val service = api.create(TimetableApi::class.java)
-        val request = service.getLectures("-1228")
+
+
+
+        // Data store id
+        //val mainDataStorage = MainDataStorage(context)
+
+
+
+
+        val id = MainDataStorage.getInstance(context).readString("TEACHER_ID")
+
+        val request = service.getLectures(id.toString())
 
 
         val gson = Gson()
