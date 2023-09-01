@@ -55,6 +55,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.Locale
 
 object TimetableWidget : GlanceAppWidget() {
@@ -71,7 +72,7 @@ object TimetableWidget : GlanceAppWidget() {
         val count = currentState(key = countKey) ?: "nera paskaitų"
 
         var teacherName by remember {
-            mutableStateOf("")
+            mutableStateOf("Pasirinkite dėstytoją")
         }
 
         //val dateIndex = currentState(key = dateIndexKey) ?: 1
@@ -79,7 +80,7 @@ object TimetableWidget : GlanceAppWidget() {
 
         Column(
             modifier = GlanceModifier.fillMaxSize()
-                .background(MaterialTheme.colorScheme.inversePrimary).padding(top=10.dp),
+                .background(Color(0, 81, 255, 0xBB)).padding(top = 10.dp),
 //            verticalAlignment = Alignment.Vertical.CenterVertically,
 //            horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
@@ -101,7 +102,10 @@ object TimetableWidget : GlanceAppWidget() {
                     GlanceModifier.padding(start = 30.dp, top = 10.dp).clickable {
                         openMainActivity(context = context)
                     },
-                    style = TextStyle(textAlign = TextAlign.Center)
+                    style = TextStyle(
+                        textAlign = TextAlign.Center,
+                        color = ColorProvider(Color(236, 247, 255, 0xFF))
+                    )
                 )
 
             }
@@ -118,18 +122,64 @@ object TimetableWidget : GlanceAppWidget() {
 
                             val dayOfWeek = getDayOfWeekFromString(it.date, dateFormat)
                             dayOfWeek == day
+                            //dayOfWeek == day && day == DayOfWeek.valueOf(LocalDate.now().toString())
                         }
 
-                        item {
-                            Text(
-                                text = day.getDisplayName(java.time.format.TextStyle.FULL, locale).toString()
-                                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() },
-                                GlanceModifier
-                                    .fillMaxSize()
-                                    .padding(4.dp),
-                                style = TextStyle(fontSize = 20.sp, textAlign = TextAlign.Center)
-                            )
+
+                        //val dayOfWeek = getDayOfWeekFromString(it.date, dateFormat)
+                        val containsDate = lecturesDtos.any {
+                            getDayOfWeekFromString(it.date, dateFormat) == day
                         }
+                        if (containsDate) {
+
+
+                            val dayHeader = day.getDisplayName(
+                                java.time.format.TextStyle.FULL,
+                                locale
+                            )
+                                .toString()
+                                .replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(
+                                        Locale.ROOT
+                                    ) else it.toString()
+                                }
+
+                            val today = LocalDate.now()
+
+                           // val testDate = LocalDate.parse("2023-09-04")
+
+                            if (today.dayOfWeek == day) {
+
+                                item {
+                                    Text(
+                                        text = "$dayHeader (Šiandien)",
+                                        GlanceModifier
+                                            .fillMaxSize()
+                                            .padding(4.dp),
+                                        style = TextStyle(
+                                            fontSize = 20.sp, textAlign = TextAlign.Center,
+                                            color = ColorProvider(Color.Yellow)
+                                        )
+                                    )
+                                }
+                            } else {
+
+                                item {
+                                    Text(
+                                        text = dayHeader,
+                                        GlanceModifier
+                                            .fillMaxSize()
+                                            .padding(4.dp),
+                                        style = TextStyle(
+                                            fontSize = 20.sp, textAlign = TextAlign.Center,
+                                            color = ColorProvider(Color(236, 247, 255, 0xFF))
+                                        )
+                                    )
+                                }
+                            }
+
+                        }
+
 
                         // Print date header
 //                        Text(
@@ -149,7 +199,7 @@ object TimetableWidget : GlanceAppWidget() {
 
                             Row(
                                 modifier = GlanceModifier.padding(2.dp)
-                                    .background(color = MaterialTheme.colorScheme.primaryContainer),
+                                    .background(color = Color(236, 247, 255, 0xFF)),
                             ) {
 
                                 Column(
@@ -164,19 +214,25 @@ object TimetableWidget : GlanceAppWidget() {
                                             .replace("[", "").replace("]", ""),
                                         style = TextStyle(fontSize = 16.sp)
                                     )
-                                    Text(
-                                        text = lecture.classids.toString().replace("[", "")
-                                            .replace("]", ""),
-                                        style = TextStyle(fontSize = 16.sp)
-                                    )
-                                    Text(
-                                        text = lecture.classroomids.toString().replace("[", "")
-                                            .replace("]", "") + " aud.",
-                                        style = TextStyle(
-                                            color = ColorProvider(MaterialTheme.colorScheme.primary),
-                                            fontSize = 16.sp, fontWeight = FontWeight.Bold
+
+
+                                    Row {
+                                        Text(
+                                            text = lecture.classids.toString().replace("[", "")
+                                                .replace("]", ""),
+                                            style = TextStyle(fontSize = 16.sp)
                                         )
-                                    )
+                                        Text(
+                                            text = " (" + lecture.classroomids.toString()
+                                                .replace("[", "")
+                                                .replace("]", "") + " aud.)",
+                                            style = TextStyle(
+                                                color = ColorProvider(Color(0, 81, 255, 0xBB)),
+                                                fontSize = 16.sp, fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                    }
+
                                     Text(
                                         text = lecture.uniperiod + " paskaita, " + lecture.starttime.toString() + "-" + lecture.endtime.toString() + " val.",
                                         style = TextStyle(fontWeight = FontWeight.Bold)
