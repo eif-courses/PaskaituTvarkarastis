@@ -88,8 +88,12 @@ object TimetableWidget : GlanceAppWidget() {
         //val dateIndex = currentState(key = dateIndexKey) ?: 1
         val gson = Gson()
 
-        val additionalData = gson.fromJson(additionalDataJson, Int::class.java)
 
+        val safeData = if (additionalDataJson.isNotBlank()) {
+            gson.fromJson(additionalDataJson, Int::class.java) ?: 0
+        } else {
+            0  // Default value if the JSON string is null or empty
+        }
 
         Column(
             modifier = GlanceModifier.fillMaxSize()
@@ -136,7 +140,7 @@ object TimetableWidget : GlanceAppWidget() {
                 )
 
                 Text(
-                    text = "(" + additionalData.toString() + " sav.)",
+                    text = "(" + safeData.toString() + " sav.)",
                     GlanceModifier.padding(start = 30.dp, top = 10.dp),
                     style = TextStyle(
                         textAlign = TextAlign.Center,
