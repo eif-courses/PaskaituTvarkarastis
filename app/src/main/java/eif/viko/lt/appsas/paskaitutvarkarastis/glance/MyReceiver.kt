@@ -1,5 +1,6 @@
 package eif.viko.lt.appsas.paskaitutvarkarastis.glance
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
@@ -8,10 +9,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.unit.dp
@@ -24,6 +21,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -52,14 +50,14 @@ import androidx.glance.layout.wrapContentWidth
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
+import androidx.glance.text.TextDecoration
+import androidx.glance.text.TextDefaults
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.google.gson.Gson
 import eif.viko.lt.appsas.paskaitutvarkarastis.MainActivity
 import eif.viko.lt.appsas.paskaitutvarkarastis.MainDataStorage
 import eif.viko.lt.appsas.paskaitutvarkarastis.R
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -69,6 +67,14 @@ object TimetableWidget : GlanceAppWidget() {
 
     val countKey = stringPreferencesKey("count")
     val additionalDataKey = stringPreferencesKey("additionalData")
+    val changesKey = stringPreferencesKey("changes")
+    val teacherNameKey = stringPreferencesKey("teacherName")
+
+    // Which entity this particular widget shows. Absent on widgets placed before per-widget
+    // selection existed; those fall back to TEACHER plus MainDataStorage's TEACHER_ID, so no
+    // migration step is needed.
+    val entityTypeKey = stringPreferencesKey("entityType")
+    val entityIdKey = stringPreferencesKey("entityId")
 
 
     //    var selectedDateIndex by remember { mutableStateOf(0) }
@@ -76,14 +82,20 @@ object TimetableWidget : GlanceAppWidget() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun Content(context: Context) {
+    fun Content(
+        context: Context,
+        storedTeacherName: String = "",
+        appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
+    ) {
         val count = currentState(key = countKey) ?: "nera paskaitų"
         val additionalDataJson = currentState(key = additionalDataKey) ?: ""
+        val changesJson = currentState(key = changesKey) ?: ""
 
-
-        var teacherName by remember {
-            mutableStateOf("Pasirinkite dėstytoją")
-        }
+        // Per-widget state first so a live widget reflects a fresh pick immediately, then
+        // the stored name, which a widget placed after the pick is the only way to know it.
+        val teacherName = currentState(key = teacherNameKey)?.takeIf { it.isNotBlank() }
+            ?: storedTeacherName.takeIf { it.isNotBlank() }
+            ?: "Pasirinkite dėstytoją"
 
         //val dateIndex = currentState(key = dateIndexKey) ?: 1
         val gson = Gson()
@@ -93,6 +105,26 @@ object TimetableWidget : GlanceAppWidget() {
             gson.fromJson(additionalDataJson, Int::class.java) ?: 0
         } else {
             0  // Default value if the JSON string is null or empty
+        }
+
+        // currentweek is an even/odd parity flag, not an ordinal week number, so it is
+        // rendered as I or II rather than raw. Any future offset must be folded back in as
+        // (currentWeek + offset) % 2 to stay inside {0, 1}; the extra + 2 keeps a negative
+        // value from producing -1.
+        val weekLabel = if (((safeData % 2) + 2) % 2 == 0) "I" else "II"
+
+        // A change record names a group, so a lecture moving OUT of a room cannot be
+        // represented in a classroom timetable; highlighting there would assert something the
+        // data does not support. Mirrors the in-app view's highlight = false.
+        val highlightChanges =
+            PickerMode.fromNameOrTeacher(currentState(key = entityTypeKey)) != PickerMode.CLASSROOM
+
+        val changes: List<ChangeDto> = if (changesJson.isNotBlank()) {
+            runCatching {
+                gson.fromJson(changesJson, Array<ChangeDto>::class.java)?.toList().orEmpty()
+            }.getOrDefault(emptyList())
+        } else {
+            emptyList()
         }
 
         Column(
@@ -131,7 +163,7 @@ object TimetableWidget : GlanceAppWidget() {
                 Text(
                     text = teacherName,
                     GlanceModifier.padding(start = 30.dp, top = 10.dp).clickable {
-                        openMainActivity(context = context)
+                        openMainActivity(context = context, appWidgetId = appWidgetId)
                     },
                     style = TextStyle(
                         textAlign = TextAlign.Center,
@@ -140,7 +172,7 @@ object TimetableWidget : GlanceAppWidget() {
                 )
 
                 Text(
-                    text = "(" + safeData.toString() + " sav.)",
+                    text = "($weekLabel sav.)",
                     GlanceModifier.padding(start = 30.dp, top = 10.dp),
                     style = TextStyle(
                         textAlign = TextAlign.Center,
@@ -231,16 +263,34 @@ object TimetableWidget : GlanceAppWidget() {
                         // Print lectures for the current day
                         itemsIndexed(lecturesForDay) { index, lecture ->
 
+                            val change = if (highlightChanges) {
+                                ChangeMatcher.findFor(lecture, changes)
+                            } else {
+                                null
+                            }
+                            val status = change?.let { ChangeMatcher.statusOf(it) }
 
-                            teacherName =
-                                lecture.teacherids.toString().replace("[", "")
-                                    .replace("]", "")
-                            //name = lecture.teacherids.toString()
-
+                            val rowBackground = when (status) {
+                                ChangeStatus.CANCELLED -> Color(0xFFDC2626)
+                                ChangeStatus.CHANGED -> Color(0xFFFACC15)
+                                null -> Color(236, 247, 255, 0xFF)
+                            }
+                            val textColor = when (status) {
+                                ChangeStatus.CANCELLED -> ColorProvider(Color.White)
+                                ChangeStatus.CHANGED -> ColorProvider(Color.Black)
+                                null -> TextDefaults.defaultTextColor
+                            }
+                            // The blue classroom accent is unreadable on the red/yellow
+                            // backgrounds, so it yields to the status colour.
+                            val accentColor = if (status == null) {
+                                ColorProvider(Color(0, 81, 255, 0xBB))
+                            } else {
+                                textColor
+                            }
 
                             Row(
                                 modifier = GlanceModifier.padding(2.dp)
-                                    .background(color = Color(236, 247, 255, 0xFF)),
+                                    .background(color = rowBackground),
                             ) {
 
                                 Column(
@@ -251,33 +301,67 @@ object TimetableWidget : GlanceAppWidget() {
                                 ) {
                                     Spacer(GlanceModifier.padding(1.dp).background(Color.Gray))
                                     Text(
-                                        text = lecture.subjectid + ", " + lecture.groupnames.toString()
-                                            .replace("[", "").replace("]", ""),
-                                        style = TextStyle(fontSize = 16.sp)
+                                        text = lecture.subjectid + ", " + lecture.groupnames.joinToString(
+                                            ", "
+                                        ),
+                                        style = TextStyle(
+                                            color = textColor,
+                                            fontSize = 16.sp,
+                                            textDecoration = if (status == ChangeStatus.CANCELLED) {
+                                                TextDecoration.LineThrough
+                                            } else {
+                                                TextDecoration.None
+                                            }
+                                        )
                                     )
 
 
                                     Row {
                                         Text(
-                                            text = lecture.classids.toString().replace("[", "")
-                                                .replace("]", ""),
-                                            style = TextStyle(fontSize = 16.sp)
+                                            text = lecture.classids.joinToString(", "),
+                                            style = TextStyle(color = textColor, fontSize = 16.sp)
                                         )
-                                        Text(
-                                            text = " (" + lecture.classroomids.toString()
-                                                .replace("[", "")
-                                                .replace("]", "") + " aud.)",
-                                            style = TextStyle(
-                                                color = ColorProvider(Color(0, 81, 255, 0xBB)),
-                                                fontSize = 16.sp, fontWeight = FontWeight.Bold
+                                        // A cancelled lecture has no room to go to, and the
+                                        // stored one would just be misleading.
+                                        if (status != ChangeStatus.CANCELLED) {
+                                            Text(
+                                                text = " (" + lecture.classroomids.joinToString(", ") + " aud.)",
+                                                style = TextStyle(
+                                                    color = accentColor,
+                                                    fontSize = 16.sp, fontWeight = FontWeight.Bold
+                                                )
                                             )
-                                        )
+                                        }
                                     }
 
                                     Text(
-                                        text = lecture.uniperiod + " paskaita, " + lecture.starttime.toString() + "-" + lecture.endtime.toString() + " val.",
-                                        style = TextStyle(fontWeight = FontWeight.Bold)
+                                        text = lecture.uniperiod + " paskaita, " + lecture.starttime + "-" + lecture.endtime + " val.",
+                                        style = TextStyle(
+                                            color = textColor,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     )
+
+                                    if (status == ChangeStatus.CANCELLED) {
+                                        // Fixed label, not the destytojas field: on a
+                                        // cancellation that field holds the marker rather
+                                        // than a teacher, and echoing it would read as one.
+                                        Text(
+                                            text = ChangeMatcher.CANCELLED_MARKER,
+                                            style = TextStyle(
+                                                color = textColor,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                    } else if (change != null && status == ChangeStatus.CHANGED) {
+                                        Text(
+                                            text = "→ " + change.auditorija.trim() + " aud., " + change.destytojas.trim(),
+                                            style = TextStyle(
+                                                color = textColor,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -288,9 +372,19 @@ object TimetableWidget : GlanceAppWidget() {
         }
     }
 
-    fun openMainActivity(context: Context) {
+    /**
+     * Carries the widget id along so the picker can bind the choice to this widget alone
+     * rather than to every placed widget.
+     */
+    fun openMainActivity(
+        context: Context,
+        appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
+    ) {
         val intent = Intent(context, MainActivity::class.java)
         intent.flags = FLAG_ACTIVITY_NEW_TASK
+        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
         context.startActivity(intent)
     }
 
@@ -322,8 +416,18 @@ object TimetableWidget : GlanceAppWidget() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Read here rather than in Content: MainDataStorage is suspend-only and composition
+        // must not block.
+        val storedTeacherName = runCatching {
+            MainDataStorage.getInstance(context).readString("TEACHER_NAME")
+        }.getOrNull().orEmpty()
+
+        val appWidgetId = runCatching {
+            GlanceAppWidgetManager(context).getAppWidgetId(id)
+        }.getOrDefault(AppWidgetManager.INVALID_APPWIDGET_ID)
+
         provideContent {
-            Content(context)
+            Content(context, storedTeacherName, appWidgetId)
         }
     }
 
@@ -383,42 +487,8 @@ class IncrementActionCallback : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-
-        val api = Retrofit.Builder()
-            .baseUrl(TimetableApi.BASE_URL)
-            .addConverterFactory(MoshiConverterFactory.create())
-            .build()
-
-        val service = api.create(TimetableApi::class.java)
-
-
-        // Data store id
-        //val mainDataStorage = MainDataStorage(context)
-
-
-        val id = MainDataStorage.getInstance(context).readString("TEACHER_ID")
-
-        val request = service.getLectures(id.toString())
-
-        val additionalData = service.getCurrentWeek()
-
-
-        val gson = Gson()
-        val json = gson.toJson(request)
-        val additionalDataJson = gson.toJson(additionalData)
-
-
-        updateAppWidgetState(context, glanceId) { prefs ->
-            val currentCount = prefs[TimetableWidget.countKey]
-
-            if (currentCount != null) {
-                prefs[TimetableWidget.countKey] = json
-                prefs[TimetableWidget.additionalDataKey] = additionalDataJson
-            } else {
-                prefs[TimetableWidget.countKey] = json
-                prefs[TimetableWidget.additionalDataKey] = additionalDataJson
-            }
-        }
+        // Same fetch-and-store path the periodic worker uses.
+        TimetableSync.syncTimetable(context)
         TimetableWidget.update(context, glanceId)
     }
 }
