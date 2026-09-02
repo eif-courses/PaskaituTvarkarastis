@@ -41,6 +41,11 @@ class TimetableSyncWorker(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
+                        // The 15-minute floor stays: Doze already stretches it to a few
+                        // runs a day when idle, and the change notifications depend on it
+                        // while the phone is in use. This is the one courtesy that costs
+                        // nothing.
+                        .setRequiresBatteryNotLow(true)
                         .build()
                 )
                 // Backs off 15m, 30m, 1h, 2h, 4h, then WorkManager's 5h ceiling, so a

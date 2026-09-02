@@ -1,3 +1,63 @@
 <resources>
     <string name="app_name">PaskaituTvarkarastis</string>
+
+    <!-- Widget header -->
+    <string name="widget_choose_teacher">Choose a teacher</string>
+    <string name="widget_updating">" · updating…"</string>
+    <string name="widget_updated">" · updated %1$s"</string>
+    <string name="widget_update_failed_short">" · failed"</string>
+    <string name="widget_update_failed">" · update failed"</string>
+    <!-- Week parity: the feed alternates two timetables, shown as I / II -->
+    <string name="widget_week_parity">Week %1$s</string>
+
+    <!-- Day header -->
+    <string name="widget_today">today</string>
+
+    <!-- Lesson row. Word order differs per language, so these are formats, not suffixes. -->
+    <string name="widget_room">Room %1$s</string>
+    <string name="widget_period">Period %1$s</string>
+    <string name="widget_moved_to">→ Room %1$s</string>
+    <!-- Display text for a cancelled lecture. Matching against the feed's own marker
+         happens on ChangeMatcher.CANCELLED_MARKER and is never translated. -->
+    <string name="lesson_cancelled">Cancelled</string>
+
+    <!-- List-body states -->
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_no_timetable_selected">No timetable selected</string>
+    <string name="widget_not_fetched">Not fetched yet · tap ⟳</string>
+    <string name="widget_empty_week">No lectures this week</string>
+    <string name="widget_exhausted_week">No more lectures this week · next week ›</string>
+
+    <!-- Accessibility -->
+    <string name="cd_previous_week">Previous week</string>
+    <string name="cd_next_week">Next week</string>
+    <string name="cd_refresh">Refresh timetable</string>
+    <string name="cd_online">Online</string>
+
+    <!-- Picker modes -->
+    <string name="mode_teacher">Teacher</string>
+    <string name="mode_group">Group</string>
+    <string name="mode_classroom">Classroom</string>
+
+    <!-- In-app picker. Group codes and entity labels are feed data and are passed in
+         as arguments, never translated. Loading reuses widget_loading. -->
+    <string name="picker_failed">Could not load the list. Check your internet connection.</string>
+    <string name="picker_back">Back</string>
+    <string name="picker_all_subgroups">All</string>
+    <!-- group code, e.g. "PI23 – subgroup" -->
+    <string name="picker_subgroup_title">%1$s – subgroup</string>
+    <string name="picker_no_lectures">No lectures at the moment</string>
+    <string name="picker_empty_list">The list is empty</string>
+    <string name="picker_bound_toast">Tap refresh to see timetable changes</string>
+
+    <!-- Change notifications -->
+    <string name="notif_channel_name">Timetable changes</string>
+    <string name="notif_channel_desc">Notifications about changes to your lectures</string>
+    <plurals name="notif_title">
+        <item quantity="one">Timetable change</item>
+        <item quantity="other">%d timetable changes</item>
+    </plurals>
+    <!-- date, period, subject, what changed -->
+    <string name="notif_line">%1$s, period %2$s %3$s — %4$s</string>
+    <string name="notif_lecture_fallback">Lecture</string>
 </resources>

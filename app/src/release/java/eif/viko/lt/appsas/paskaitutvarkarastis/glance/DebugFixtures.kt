@@ -8,5 +8,11 @@ import android.content.Context
  */
 object DebugFixtures {
 
+    fun isEnabled(context: Context): Boolean = false
+
     fun lecturesOrNull(context: Context): List<LecturesDto>? = null
+
+    fun changesOrNull(context: Context): List<ChangeDto>? = null
+
+    fun syncedAtOrNull(context: Context): Long? = null
 }

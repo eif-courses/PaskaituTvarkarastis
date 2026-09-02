@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">PaskaituTvarkarastis</string>
+
+    <string name="widget_choose_teacher">Pasirinkite dėstytoją</string>
+    <string name="widget_updating">" · atnaujinama…"</string>
+    <string name="widget_updated">" · atnaujinta %1$s"</string>
+    <string name="widget_update_failed_short">" · nepavyko"</string>
+    <string name="widget_update_failed">" · nepavyko atnaujinti"</string>
+    <string name="widget_week_parity">%1$s sav.</string>
+
+    <string name="widget_today">šiandien</string>
+
+    <string name="widget_room">%1$s aud.</string>
+    <string name="widget_period">%1$s pask.</string>
+    <string name="widget_moved_to">→ %1$s aud.</string>
+    <string name="lesson_cancelled">Paskaitos nėra</string>
+
+    <string name="widget_loading">Kraunama…</string>
+    <string name="widget_no_timetable_selected">Tvarkaraštis nepasirinktas</string>
+    <string name="widget_not_fetched">Tvarkaraštis dar neatsiųstas · spauskite ⟳</string>
+    <string name="widget_empty_week">Šią savaitę paskaitų nėra</string>
+    <string name="widget_exhausted_week">Šią savaitę paskaitų daugiau nėra · kita savaitė ›</string>
+
+    <string name="cd_previous_week">Ankstesnė savaitė</string>
+    <string name="cd_next_week">Kita savaitė</string>
+    <string name="cd_refresh">Atnaujinti tvarkaraštį</string>
+    <string name="cd_online">Nuotoliu</string>
+
+    <string name="mode_teacher">Dėstytojas</string>
+    <string name="mode_group">Grupė</string>
+    <string name="mode_classroom">Auditorija</string>
+
+    <string name="picker_failed">Programėlė neveikia arba nėra interneto :)</string>
+    <string name="picker_back">Atgal</string>
+    <string name="picker_all_subgroups">Visos</string>
+    <string name="picker_subgroup_title">%1$s – pogrupis</string>
+    <string name="picker_no_lectures">Šiuo metu paskaitų nėra</string>
+    <string name="picker_empty_list">Sąrašas tuščias</string>
+    <string name="picker_bound_toast">Paspauskite atnaujinti, kad matytumėte tvarkaraščio pakeitimus!</string>
+
+    <string name="notif_channel_name">Tvarkaraščio pakeitimai</string>
+    <string name="notif_channel_desc">Pranešimai apie jūsų paskaitų pakeitimus</string>
+    <!-- Lithuanian plural forms: 1 / 2-9 / 10-20 and ×0 / other -->
+    <plurals name="notif_title">
+        <item quantity="one">Tvarkaraščio pakeitimas</item>
+        <item quantity="few">%d tvarkaraščio pakeitimai</item>
+        <item quantity="many">%d tvarkaraščio pakeitimo</item>
+        <item quantity="other">%d tvarkaraščio pakeitimų</item>
+    </plurals>
+    <string name="notif_line">%1$s, %2$s pask. %3$s — %4$s</string>
+    <string name="notif_lecture_fallback">Paskaita</string>
+</resources>

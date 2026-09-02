@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Runtime-requested on Android 13+; the app works without it, just silently. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:name=".PaskaituTvarkarastisApp"
         android:allowBackup="true"
@@ -28,6 +30,18 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
+        <!-- Widgets keep their last RemoteViews across a language change; this re-renders.
+             LOCALE_CHANGED is a protected broadcast (system-only sender), so exporting the
+             receiver for it is safe. -->
+        <receiver
+            android:name=".glance.LocaleChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="android.intent.action.APPLICATION_LOCALE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".glance.TimetableMyReceiver"
             android:exported="true">
             <intent-filter>

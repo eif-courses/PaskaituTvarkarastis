@@ -12,7 +12,14 @@ object ChangeMatcher {
 
     private const val TARGET_PATTERN = "yyyy-MM-dd"
 
-    /** What the study department writes into `destytojas` when a lecture is cancelled. */
+    /**
+     * What the study department writes into `destytojas` when a lecture is cancelled.
+     *
+     * Deliberately NOT a string resource and NOT translated. This is feed data, not UI text:
+     * it is compared against what the department types into Firebase, and the department
+     * types Lithuanian regardless of the phone's language. The text shown to the user for a
+     * cancelled lecture is a separate resource, `R.string.lesson_cancelled`.
+     */
     const val CANCELLED_MARKER = "Paskaitos nėra"
 
     // Locale.US throughout: Firebase stores JavaScript Date.prototype.toDateString()

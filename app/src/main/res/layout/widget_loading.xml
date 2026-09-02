@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shown by the host in the moment between a widget being dropped and Glance's first render.
+  Without this it is Glance's generic grey placeholder - a blank card, which is the very first
+  thing every user sees. Plain RemoteViews-compatible views only; Glance takes over after.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|top"
+        android:text="@string/widget_loading"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="12sp" />
+
+</FrameLayout>
