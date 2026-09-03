@@ -57,7 +57,10 @@
         <item quantity="one">Timetable change</item>
         <item quantity="other">%d timetable changes</item>
     </plurals>
-    <!-- date, period, subject, what changed -->
-    <string name="notif_line">%1$s, period %2$s %3$s — %4$s</string>
+    <!-- One notification line: outcome, subject, MM-dd, HH:mm. The outcome leads because
+         the shade truncates at ~45 characters; the subject precedes the date because a
+         date alone does not say which lecture; the time separates two changes to the same
+         subject on one day. -->
+    <string name="notif_line">%1$s · %2$s · %3$s %4$s</string>
     <string name="notif_lecture_fallback">Lecture</string>
 </resources>

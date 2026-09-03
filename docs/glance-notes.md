@@ -78,6 +78,25 @@ Glance cannot measure text, so the scale itself is the only lever for "will it f
 `FontScale.isLargeText` gates `maxLines = 2` on the densest lines, the stacked caption, and
 the time column. One threshold, pinned by a test so a change to it is deliberate.
 
+## 4. Week parity comes from a per-term constant, not the backend
+
+The header's I / II parity is derived in `WeekParity` from an anchor: one Monday plus that
+week's parity, counted forward in plain 7-day steps on epoch days. It is **not** read from
+`/timetable/currentweek` for display.
+
+Why: that endpoint is (ISO week + a Firebase node) % 2, and the node was changed on a
+Thursday once, so the same calendar week rendered as "II" on Wednesday and "I" on
+Thursday. Parity is the one thing on the header that gets read, so it must not depend on
+a value that can change mid-week.
+
+**The anchor is a per-term constant.** If the header drifts from the official timetable,
+`WeekParity.ANCHOR_MONDAY` / `ANCHOR_PARITY` is what needs updating - a new term, or a
+break the department did not count as a week. The sync still fetches the endpoint and logs
+a `Parity disagreement` warning when the two differ, which is the cue to look here.
+
+Epoch-day arithmetic rather than ISO week numbers on purpose: 2026 has an ISO week 53, so
+ISO arithmetic gives the weeks of 2026-12-28 and 2027-01-04 the same parity.
+
 ## Related, cheaper to remember
 
 - `initialLayout` is only shown on a genuine first drop. A launcher restart or rebind shows

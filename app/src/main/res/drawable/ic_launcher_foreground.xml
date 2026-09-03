@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Three staggered bars, echoing the widget's accent bars. The specified mark
+         (x=30/47/64, y=26/34/46, w=7, h=24/40/36, rx=3.5) scaled by 0.85 about the
+         canvas centre so every bar stays inside the platform's 66dp safe circle:
+         bar1: x=33.6 y=30.2 w=5.95 h=20.4 rx=2.975
+         bar2: x=48.05 y=37 w=5.95 h=34 rx=2.975
+         bar3: x=62.5 y=47.2 w=5.95 h=30.6 rx=2.975
+         Worst case is bar1 at 30.13dp from centre (limit 33). -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33.6,33.175 a2.975,2.975 0 0 1 5.95,0 v14.45 a2.975,2.975 0 0 1 -5.95,0 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.75"
+        android:pathData="M48.05,39.975 a2.975,2.975 0 0 1 5.95,0 v28.05 a2.975,2.975 0 0 1 -5.95,0 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.5"
+        android:pathData="M62.5,50.175 a2.975,2.975 0 0 1 5.95,0 v24.65 a2.975,2.975 0 0 1 -5.95,0 z" />
+</vector>

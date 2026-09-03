@@ -171,6 +171,19 @@ object TimetableSync {
             // A notification-only target has no widget state to write.
             if (glanceId == null) return@forEach
 
+            // The endpoint is still fetched and stored, but the header no longer reads it.
+            // A disagreement is logged so a stale anchor (new term) or a flipped Firebase
+            // node is visible in logcat instead of silently rendering the wrong parity.
+            val derived = WeekParity.of(WeekRange.mondayOf(0))
+            if (currentWeek != derived) {
+                Log.w(
+                    TAG,
+                    "Parity disagreement for the week of ${WeekRange.mondayOf(0)}: " +
+                        "endpoint=$currentWeek derived=$derived (anchor ${WeekParity.ANCHOR_MONDAY}=" +
+                        "${WeekParity.ANCHOR_PARITY}). Check WeekParity if a new term started."
+                )
+            }
+
             updateAppWidgetState(context, glanceId) { prefs ->
                 prefs[TimetableWidget.countKey] = gson.toJson(lectures)
                 prefs[TimetableWidget.additionalDataKey] = gson.toJson(currentWeek)
@@ -209,7 +222,8 @@ object TimetableSync {
 
         // Never allowed to affect the sync outcome: a notification problem must not make the
         // worker retry a fetch that already succeeded.
-        runCatching { ChangeNotifier.notifyNewMatches(context, matched) }
+        val boundEntities = targets.distinctBy { it.entityType to it.entityId }.size
+        runCatching { ChangeNotifier.notifyNewMatches(context, matched, boundEntities) }
             .onFailure { Log.w(TAG, "Could not raise change notification", it) }
 
         return when {

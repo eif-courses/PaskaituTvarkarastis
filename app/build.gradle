@@ -9,7 +9,9 @@ android {
 
     defaultConfig {
         applicationId "eif.viko.lt.appsas.paskaitutvarkarastis"
-        minSdk 23
+        // 26: the widget (java.time in composition) and the adaptive icon both need it, and
+        // nothing below 26 ever rendered the widget. Raised from a nominal 23 on 2026-09-03.
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"

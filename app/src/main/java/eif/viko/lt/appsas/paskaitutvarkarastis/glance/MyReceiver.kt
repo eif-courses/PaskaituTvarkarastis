@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.ParseException
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -182,7 +181,6 @@ object TimetableWidget : GlanceAppWidget() {
     private fun LecturesDto.isPlaceholder(): Boolean =
         subjectid.isBlank() || subjectid.equals("N/A", ignoreCase = true)
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun Content(
         rawContext: Context,
@@ -247,8 +245,9 @@ object TimetableWidget : GlanceAppWidget() {
         val nowHHmm = String.format(Locale.ROOT, "%02d:%02d", now.hour, now.minute)
 
         // Parity shows on every week, not only future ones: a label that appears and
-        // disappears would reflow the header on every arrow press.
-        val weekLabel = if ((((safeData + weekOffset) % 2) + 2) % 2 == 0) "I" else "II"
+        // disappears would reflow the header on every arrow press. Derived from the
+        // per-term anchor in WeekParity, never from the endpoint: see glance-notes.md §4.
+        val weekLabel = WeekParity.label(monday)
 
         val entityType = PickerMode.fromNameOrTeacher(currentState(key = entityTypeKey))
         val highlightChanges = entityType != PickerMode.CLASSROOM
@@ -916,8 +915,6 @@ object TimetableWidget : GlanceAppWidget() {
     }
 
 
-    // TODO need upgrade version to minimal api 23 instead 26
-    @RequiresApi(Build.VERSION_CODES.O)
     fun getDayOfWeekFromString(dateString: String, dateFormat: String): DayOfWeek? {
         try {
             val sdf = SimpleDateFormat(dateFormat, Locale.US)
@@ -941,7 +938,6 @@ object TimetableWidget : GlanceAppWidget() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // Read here rather than in Content: MainDataStorage is suspend-only and composition
         // must not block.

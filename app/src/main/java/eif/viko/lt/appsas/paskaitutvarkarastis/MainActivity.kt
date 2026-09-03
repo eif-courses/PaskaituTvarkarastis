@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -99,6 +100,8 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        /** Logcat tag for every write of the entity selection. */
+        const val BINDING_TAG = "EntityBinding"
         const val EXTRA_ENTITY_TYPE = "entityType"
         const val EXTRA_ENTITY_ID = "entityId"
         const val EXTRA_ENTITY_LABEL = "entityLabel"
@@ -254,6 +257,14 @@ class MainActivity : ComponentActivity() {
                             // The pair is stored for every mode; TEACHER_ID stays alongside
                             // it so the widget keeps working exactly as before.
                             coroutineScope.launch {
+                                // Every write of the selection is logged: widget 6 once
+                                // changed entity with no picker interaction anyone could
+                                // account for, so the next time it happens the log says who.
+                                Log.i(
+                                    BINDING_TAG,
+                                    "selection store <- ${mode.name} ${entity.id} '${entity.label}' " +
+                                        "(launcher list, configuredWidgetId=$configuredWidgetId)"
+                                )
                                 mainDataStorage.writeString("ENTITY_TYPE", mode.name)
                                 mainDataStorage.writeString("ENTITY_ID", entity.id)
                                 // Read back by the sync to label notification lines, and to
@@ -337,6 +348,7 @@ class MainActivity : ComponentActivity() {
             // Only teachers touch this: it is the fallback for widgets placed before they had
             // an entity of their own, and a group id there would be read back as a teacher id.
             if (mode == PickerMode.TEACHER) {
+                Log.i(BINDING_TAG, "teacher fallback <- ${entity.id} '${entity.label}'")
                 mainDataStorage.writeString("TEACHER_ID", entity.id)
                 mainDataStorage.writeString("TEACHER_NAME", entity.label)
             }
@@ -353,6 +365,12 @@ class MainActivity : ComponentActivity() {
                 manager.getGlanceIds(TimetableWidget::class.java)
             }
 
+            Log.i(
+                BINDING_TAG,
+                "widget state <- ${mode.name} ${entity.id} '${entity.label}' subgroup='$subgroup' " +
+                    "targets=$targets configuredWidgetId=$configuredWidgetId " +
+                    "caller=${Throwable().stackTrace.getOrNull(1)?.let { "${it.methodName}:${it.lineNumber}" }}"
+            )
             targets.forEach { glanceId ->
                 updateAppWidgetState(context, glanceId) { prefs ->
                     prefs[TimetableWidget.entityTypeKey] = mode.name

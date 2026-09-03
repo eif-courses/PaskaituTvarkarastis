@@ -42,11 +42,12 @@
     <string name="notif_channel_desc">Pranešimai apie jūsų paskaitų pakeitimus</string>
     <!-- Lithuanian plural forms: 1 / 2-9 / 10-20 and ×0 / other -->
     <plurals name="notif_title">
-        <item quantity="one">Tvarkaraščio pakeitimas</item>
+        <!-- "one" is 1, 21, 31 ... in Lithuanian, so the number must be shown. -->
+        <item quantity="one">%d tvarkaraščio pakeitimas</item>
         <item quantity="few">%d tvarkaraščio pakeitimai</item>
         <item quantity="many">%d tvarkaraščio pakeitimo</item>
         <item quantity="other">%d tvarkaraščio pakeitimų</item>
     </plurals>
-    <string name="notif_line">%1$s, %2$s pask. %3$s — %4$s</string>
+    <string name="notif_line">%1$s · %2$s · %3$s %4$s</string>
     <string name="notif_lecture_fallback">Paskaita</string>
 </resources>
