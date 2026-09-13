@@ -12,6 +12,14 @@
 
     <!-- Day header -->
     <string name="widget_today">today</string>
+    <!-- Muted summary under a day header: "3 lessons · 10:15–17:30". Cancelled lectures are
+         excluded from the count and the span. -->
+    <plurals name="day_lessons">
+        <item quantity="one">%d lesson</item>
+        <item quantity="other">%d lessons</item>
+    </plurals>
+    <!-- Pill on the meta line of a lecture held online (the feed says "MS Teams"). -->
+    <string name="widget_online">Online</string>
 
     <!-- Lesson row. Word order differs per language, so these are formats, not suffixes. -->
     <string name="widget_room">Room %1$s</string>

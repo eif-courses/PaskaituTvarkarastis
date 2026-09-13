@@ -126,6 +126,73 @@ Like the parity anchor in §4 it is a per-institution constant, not data. Splitt
 also change change-matching: a cancellation filed under a block's first period would then
 hit only that period's row.
 
+## 6. A delayed WorkManager request is not a timer on Android 14+
+
+`OneTimeWorkRequest` with `setInitialDelay(125s)`, no constraints, unique-name replaced,
+enqueued from the sync. `RefreshChain` logs `Re-render in 125s`. `dumpsys jobscheduler`
+lists the job with `TIMING_DELAY FLEXIBILITY` required and, once the delay has passed,
+**every constraint satisfied and none unsatisfied**. The process is alive, the app is in
+the ACTIVE standby bucket, the screen is on. The worker does not run. Polled for six and
+a half minutes: nothing. `cmd jobscheduler run -f` runs it instantly and it behaves.
+
+The mechanism: since Android 14, JobScheduler defers regular jobs - not expedited, not
+user-initiated - for batching. A job whose constraints are all met is still not started
+until the system decides to run a batch, which in practice happens when the next periodic
+job (here the 15-minute sync) or some other app's job comes due. The delay is a floor, not
+a schedule. No log line or dumpsys field says "deferred for batching"; the job simply
+sits there looking ready.
+
+Consequences for this widget:
+
+- Nothing finer than the 15-minute sync can be promised without an exact alarm, and
+  `SCHEDULE_EXACT_ALARM` is a user toggle on 14+ plus a permanent status-bar icon - not
+  worth it for a widget. Inexact alarms are widened to ten-minute windows since Android 12.
+- So the countdown ("2h 50m left") was dropped: rounded to what the platform guarantees
+  it would have been coarser than the end time already on the row. The re-render chain is
+  kept as best effort - free, invisible, and it does drop a stale tint at a lecture's end
+  whenever a batch happens to run then.
+- Any future "re-render at a boundary" idea must be verified by polling the device with no
+  input for longer than the delay, watching the actual render. The arming log line, the
+  job listing and even "all constraints satisfied" prove nothing.
+
+The debug fixture has a row that ends two minutes after it loads (`baigiasi`), and a
+`pin-current-week` marker so today's fixture rows are visible at the weekend. Both exist
+for this kind of test.
+
+## 7. A hex that lands in a theme role is decorative
+
+For most of this widget's life the status colours were reviewed and signed off as fixed
+values - a cancelled bar "at full strength", a moved bar in amber. In the code they were
+`GlanceTheme.colors.outline` and `GlanceTheme.colors.tertiary`, and the theme was
+`dynamicLightColorScheme(context)`: Material You, resolved from the wallpaper at render
+time. On the emulator's wallpaper "cancelled" was a grey and "moved" was a purple. The hex
+values in the design existed nowhere, and every screenshot agreed with the design because
+one wallpaper happened to produce colours that read the same way.
+
+Neither a code read nor a screenshot catches this. A code read sees a role name and
+assumes the role is what the design says; a screenshot on one wallpaper shows one of
+infinitely many resolutions. The check is one of two things:
+
+- resolve the colour at render time and compare it to the specification (log it, or
+  sample the capture's pixels), or
+- view the same screen on two different wallpapers and confirm nothing that is meant to be
+  fixed moved.
+
+The widget is now on `WidgetPalette`, fixed pairs per role, and `GlanceTheme` is not in
+the tree.
+
+**Moved and cancelled have the same luminance on purpose.** Both status colours sit at AA
+text contrast against the surface, which puts them at 1.02:1 against each other: the
+amber bar is exactly as dark as the red one. Hue carries the distinction for most people.
+For everyone else it is carried by the strikethrough on a cancelled subject and by the
+words on the status line - "Cancelled" versus "→ Room 320". Those are load-bearing
+accessibility features, not decoration. Anyone tempted to drop the strikethrough or the
+status line to save a line of height needs to know that they are the only thing left
+separating the two states for a reader who cannot use hue. The remaining dynamic surfaces are deliberate: the app's own screens (Material
+You, `ui/theme`), and the launcher's themed (monochrome) icon. The first-drop
+`initialLayout` used system theme attributes and now mirrors the palette through
+`colors_widget.xml` (day and night).
+
 ## Related, cheaper to remember
 
 - `initialLayout` is only shown on a genuine first drop. A launcher restart or rebind shows

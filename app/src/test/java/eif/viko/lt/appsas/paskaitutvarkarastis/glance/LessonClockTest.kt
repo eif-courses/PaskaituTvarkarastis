@@ -2,6 +2,7 @@ package eif.viko.lt.appsas.paskaitutvarkarastis.glance
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LessonClockTest {
@@ -30,5 +31,13 @@ class LessonClockTest {
         assertFalse(LessonClock.isInProgress("10:15", "11:45", "11:45"))  // ended: finished, not in progress
         assertFalse(LessonClock.isInProgress("10:15", "11:45", "10:14"))  // upcoming
         assertTrue(LessonClock.isInProgress("22:00", "24:00", "23:59"))   // consistent with hasEnded
+    }
+
+    @Test
+    fun `minutes between clock strings`() {
+        assertEquals(173, LessonClock.minutesBetween("12:52", "15:45"))
+        assertEquals(0, LessonClock.minutesBetween("15:45", "15:45"))
+        assertEquals(-10, LessonClock.minutesBetween("15:55", "15:45"))
+        assertEquals(35, LessonClock.minutesBetween(" 09:25", "10:00 "))
     }
 }

@@ -10,6 +10,9 @@ object DebugFixtures {
 
     fun isEnabled(context: Context): Boolean = false
 
+    fun pinCurrentWeek(context: Context): Boolean = false
+
+
     fun lecturesOrNull(context: Context): List<LecturesDto>? = null
 
     fun changesOrNull(context: Context): List<ChangeDto>? = null

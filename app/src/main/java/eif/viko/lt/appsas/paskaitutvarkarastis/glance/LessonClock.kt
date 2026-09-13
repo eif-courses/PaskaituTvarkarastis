@@ -20,4 +20,13 @@ object LessonClock {
     /** startTime <= now < endTime. Sits between finished and upcoming. */
     fun isInProgress(startTime: String, endTime: String, now: String): Boolean =
         startTime.trim() <= now.trim() && !hasEnded(endTime, now)
+
+    /** Minutes from [fromHHmm] to [toHHmm] on the same day; negative when already past. */
+    fun minutesBetween(fromHHmm: String, toHHmm: String): Int = minutesOf(toHHmm) - minutesOf(fromHHmm)
+
+    private fun minutesOf(hhmm: String): Int {
+        val parts = hhmm.trim().split(":")
+        require(parts.size == 2) { "expected HH:mm, got '$hhmm'" }
+        return parts[0].toInt() * 60 + parts[1].toInt()
+    }
 }

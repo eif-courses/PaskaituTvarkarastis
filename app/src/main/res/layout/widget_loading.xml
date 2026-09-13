@@ -7,7 +7,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
+    android:background="@color/widget_surface"
     android:padding="16dp">
 
     <TextView
@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="start|top"
         android:text="@string/widget_loading"
-        android:textColor="?android:attr/textColorSecondary"
+        android:textColor="@color/widget_text_secondary"
         android:textSize="12sp" />
 
 </FrameLayout>

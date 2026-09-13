@@ -6,21 +6,14 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.ParseException
 import android.os.Build
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.unit.DpSize
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.glance.ColorFilter
-import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.state.getAppWidgetState
-import androidx.glance.color.ColorProviders
 import androidx.glance.layout.Box
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.compose.runtime.Composable
@@ -230,7 +223,13 @@ object TimetableWidget : GlanceAppWidget() {
         }
 
         val storedOffset = currentState(key = weekOffsetKey) ?: 0
-        val weekOffset = effectiveWeekOffset(storedOffset)
+        // Debug-only: a marker file pins the display to the current week so fixture rows
+        // dated today are visible at the weekend. Release always returns false.
+        val weekOffset = if (DebugFixtures.pinCurrentWeek(rawContext)) {
+            storedOffset.coerceIn(0, MAX_WEEK_OFFSET)
+        } else {
+            effectiveWeekOffset(storedOffset)
+        }
         val monday = WeekRange.mondayOf(weekOffset)
         val sunday = WeekRange.sundayOf(weekOffset)
 
@@ -270,11 +269,11 @@ object TimetableWidget : GlanceAppWidget() {
         // Everything under here reads LocalContext for strings and the day-name locale, so
         // it must be the localized context from provideGlance, not Glance's own.
         CompositionLocalProvider(LocalContext provides context) {
-        GlanceTheme(colors = widgetColors(context)) {
+        run {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(GlanceTheme.colors.background)
+                    .background(WidgetPalette.surface)
                     .appWidgetBackgroundRadius()
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
@@ -359,7 +358,7 @@ object TimetableWidget : GlanceAppWidget() {
                                     text = stateLine,
                                     modifier = GlanceModifier.padding(top = 12.dp),
                                     style = TextStyle(
-                                        color = GlanceTheme.colors.onSurfaceVariant,
+                                        color = WidgetPalette.secondaryText,
                                         fontSize = 12.sp
                                     ),
                                     maxLines = 1
@@ -369,11 +368,17 @@ object TimetableWidget : GlanceAppWidget() {
 
                         days.forEachIndexed { index, (day, lecturesForDay) ->
                             item {
+                                val totals = DaySummary.of(lecturesForDay) { lecture ->
+                                    highlightChanges &&
+                                        ChangeMatcher.findFor(lecture, changes)
+                                            ?.let { ChangeMatcher.statusOf(it) } == ChangeStatus.CANCELLED
+                                }
                                 DayHeader(
                                     day = day,
                                     date = lecturesForDay.first().date,
                                     isToday = weekOffset == 0 && today.dayOfWeek == day,
-                                    first = index == 0
+                                    first = index == 0,
+                                    summary = daySummary(context, totals)
                                 )
                             }
                             itemsIndexed(lecturesForDay) { _, lecture ->
@@ -414,18 +419,6 @@ object TimetableWidget : GlanceAppWidget() {
      * static scheme keeps the widget legible instead of leaving colours undefined.
      */
     @Composable
-    private fun widgetColors(context: Context): ColorProviders =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            androidx.glance.material3.ColorProviders(
-                light = dynamicLightColorScheme(context),
-                dark = dynamicDarkColorScheme(context)
-            )
-        } else {
-            androidx.glance.material3.ColorProviders(
-                light = lightColorScheme(),
-                dark = darkColorScheme()
-            )
-        }
 
     /** The platform widget radius on API 31+, and a sane constant below it. */
     private fun GlanceModifier.appWidgetBackgroundRadius(): GlanceModifier =
@@ -469,7 +462,7 @@ object TimetableWidget : GlanceAppWidget() {
                         monday.takeLast(5) + " – " + sunday.takeLast(5)
                     ).joinToString(" · "),
                     style = TextStyle(
-                        color = GlanceTheme.colors.onBackground,
+                        color = WidgetPalette.primaryText,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     ),
@@ -545,7 +538,7 @@ object TimetableWidget : GlanceAppWidget() {
                 openMainActivity(context = context, appWidgetId = appWidgetId)
             },
             style = TextStyle(
-                color = GlanceTheme.colors.primary,
+                color = WidgetPalette.link,
                 fontSize = 12.sp,
                 textDecoration = TextDecoration.Underline
             ),
@@ -576,7 +569,7 @@ object TimetableWidget : GlanceAppWidget() {
             modifier = GlanceModifier.wrapContentWidth(),
             text = if (ownLine) timestamp.removePrefix(CAPTION_SEPARATOR) else timestamp,
             style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
+                color = WidgetPalette.secondaryText,
                 fontSize = 12.sp
             ),
             maxLines = 1
@@ -593,7 +586,7 @@ object TimetableWidget : GlanceAppWidget() {
                        else failure,
                 modifier = GlanceModifier.wrapContentWidth(),
                 style = TextStyle(
-                    color = GlanceTheme.colors.error,
+                    color = WidgetPalette.cancelled,
                     fontSize = 12.sp
                 ),
                 maxLines = 1
@@ -617,13 +610,20 @@ object TimetableWidget : GlanceAppWidget() {
                 provider = androidx.glance.ImageProvider(resId),
                 contentDescription = description,
                 modifier = GlanceModifier.size(20.dp),
-                colorFilter = ColorFilter.tint(GlanceTheme.colors.onBackground)
+                colorFilter = ColorFilter.tint(WidgetPalette.primaryText)
             )
         }
     }
 
     @Composable
-    private fun DayHeader(day: DayOfWeek, date: String, isToday: Boolean, first: Boolean) {
+    private fun DayHeader(
+        day: DayOfWeek,
+        date: String,
+        isToday: Boolean,
+        first: Boolean,
+        /** "3 lessons · 6h 15m", already localized; null hides the line. */
+        summary: String?
+    ) {
         // Day names are generated from the date, not taken from the feed, so they follow the
         // app locale like everything else.
         val locale = LocalContext.current.appLocale()
@@ -635,16 +635,21 @@ object TimetableWidget : GlanceAppWidget() {
         // edge does the grouping, and a horizontal line would add a second axis competing
         // with the vertical accent bars. Asymmetric: more above the header than below it, so
         // the header attaches to the day it introduces rather than floating between two.
-        Row(
+        // One root per item (glance-notes.md §1): the header row and its summary line
+        // stack inside a Column, never as two roots.
+        Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .padding(top = if (first) 10.dp else 16.dp, bottom = 4.dp),
+                .padding(top = if (first) 10.dp else 16.dp, bottom = 4.dp)
+        ) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
                 text = name + " " + date.takeLast(5),
                 style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
+                    color = WidgetPalette.secondaryText,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 ),
@@ -655,17 +660,46 @@ object TimetableWidget : GlanceAppWidget() {
                 Text(
                     text = LocalContext.current.getString(R.string.widget_today),
                     modifier = GlanceModifier
-                        .background(GlanceTheme.colors.primaryContainer)
+                        .background(WidgetPalette.todayFill)
                         .innerRadius()
                         .padding(horizontal = 6.dp, vertical = 1.dp),
                     style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
+                        color = WidgetPalette.todayText,
                         fontSize = 12.sp
                     ),
                     maxLines = 1
                 )
             }
         }
+        if (summary != null) {
+            Text(
+                text = summary,
+                modifier = GlanceModifier.padding(top = 1.dp),
+                style = TextStyle(
+                    color = WidgetPalette.mutedText,
+                    fontSize = 11.sp
+                ),
+                maxLines = 2
+            )
+        }
+        }
+    }
+
+    /**
+     * "3 lessons · 10:15–17:30": the count and the day's span, first start to last end.
+     * Cancelled lectures are excluded from both - they are not happening and their rows
+     * are already struck through - so the count can be lower than the rows under the
+     * header. With one lecture the span would only repeat that row's own times, so the
+     * line is the count alone; likewise with none.
+     */
+    private fun daySummary(context: Context, totals: DaySummary.Totals): String {
+        val count = context.resources.getQuantityString(
+            R.plurals.day_lessons, totals.lectures, totals.lectures
+        )
+        val first = totals.firstStart
+        val last = totals.lastEnd
+        if (totals.lectures < 2 || first == null || last == null) return count
+        return "$count · $first–$last"
     }
 
     @Composable
@@ -698,17 +732,14 @@ object TimetableWidget : GlanceAppWidget() {
         // reads as a slightly different stripe in a striped list, not as an exception.
         // Cancelled is muted rather than loud: the row is already struck through and greyed.
         val accent = when (status) {
-            ChangeStatus.CANCELLED -> GlanceTheme.colors.outline
-            ChangeStatus.CHANGED -> GlanceTheme.colors.tertiary
-            null -> androidx.glance.color.ColorProvider(
-                day = Color(0xFFC9C9C2),
-                night = Color(0xFF3A3A37)
-            )
+            ChangeStatus.CANCELLED -> WidgetPalette.cancelled
+            ChangeStatus.CHANGED -> WidgetPalette.moved
+            null -> WidgetPalette.neutralBar
         }
         val titleColor = if (muted) {
-            GlanceTheme.colors.onSurfaceVariant
+            WidgetPalette.secondaryText
         } else {
-            GlanceTheme.colors.onBackground
+            WidgetPalette.primaryText
         }
 
         // Two nested rows so the tint is a bounded object, not a full-bleed band: the outer
@@ -720,10 +751,7 @@ object TimetableWidget : GlanceAppWidget() {
         // are", not as a fourth status competing with the bar. The two values below are
         // chosen per mode rather than one value inverted - a tint that works on a light
         // surface is far too loud on a dark one.
-        val tint = androidx.glance.color.ColorProvider(
-            day = Color(0xFFE9E6EE),
-            night = Color(0xFF2B2A30)
-        )
+        val tint = WidgetPalette.inProgressTint
 
         // Deliberately not clickable: the only way into the app is the entity name in the
         // header. A tap on a lecture used to open the app, which read as an accident.
@@ -732,16 +760,16 @@ object TimetableWidget : GlanceAppWidget() {
                 .fillMaxWidth()
                 .padding(vertical = 3.dp)
         ) {
+        // Every row is the same rounded block; only the fill changes. At rest the fill is
+        // fully transparent, so an ordinary row reads exactly as before - the shape exists so
+        // the in-progress tint has somewhere to live and the two never differ in geometry.
+        val restFill = WidgetPalette.rowRest
         Row(
-            modifier = if (tinted) {
-                GlanceModifier
-                    .fillMaxWidth()
-                    .background(tint)
-                    .innerRadius()
-                    .padding(vertical = 2.dp)
-            } else {
-                GlanceModifier.fillMaxWidth().padding(vertical = 2.dp)
-            }
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .background(if (tinted) tint else restFill)
+                .innerRadius()
+                .padding(vertical = 2.dp)
         ) {
             // Right-aligned column. At default scale it is a fixed 44dp: the times line up
             // down one edge and sit well inside the in-progress tint's corner radius. At
@@ -770,7 +798,7 @@ object TimetableWidget : GlanceAppWidget() {
                     text = lecture.endtime,
                     modifier = timeText,
                     style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
+                        color = WidgetPalette.mutedText,
                         fontSize = 12.sp,
                         textAlign = TextAlign.End
                     ),
@@ -808,18 +836,35 @@ object TimetableWidget : GlanceAppWidget() {
                     // An icon rather than a colour: if the room data is messy, a missing icon
                     // reads as "not stated", whereas a wrong colour reads as a claim.
                     if (lecture.isOnline()) {
-                        Image(
-                            provider = androidx.glance.ImageProvider(R.drawable.ic_video_24),
-                            contentDescription = LocalContext.current.getString(R.string.cd_online),
-                            modifier = GlanceModifier.size(12.dp),
-                            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant)
-                        )
-                        Spacer(modifier = GlanceModifier.width(4.dp))
+                        Row(
+                            modifier = GlanceModifier
+                                .background(WidgetPalette.pillFill)
+                                .innerRadius()
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                            verticalAlignment = Alignment.Vertical.CenterVertically
+                        ) {
+                            Image(
+                                provider = androidx.glance.ImageProvider(R.drawable.ic_video_24),
+                                contentDescription = LocalContext.current.getString(R.string.cd_online),
+                                modifier = GlanceModifier.size(11.dp),
+                                colorFilter = ColorFilter.tint(WidgetPalette.pillText)
+                            )
+                            Spacer(modifier = GlanceModifier.width(3.dp))
+                            Text(
+                                text = LocalContext.current.getString(R.string.widget_online),
+                                style = TextStyle(
+                                    color = WidgetPalette.pillText,
+                                    fontSize = 11.sp
+                                ),
+                                maxLines = 1
+                            )
+                        }
+                        Spacer(modifier = GlanceModifier.width(6.dp))
                     }
                     Text(
                         text = metaLine(LocalContext.current, lecture, cancelled, binding),
                         style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
+                            color = WidgetPalette.secondaryText,
                             fontSize = 12.sp
                         ),
                         maxLines = if (largeText) 2 else 1
@@ -831,7 +876,7 @@ object TimetableWidget : GlanceAppWidget() {
                     Text(
                         text = lecture.teacherids.joinToString(", ") { it.trim().withoutAcademicTitle() },
                         style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
+                            color = WidgetPalette.secondaryText,
                             fontSize = 12.sp
                         ),
                         maxLines = 1

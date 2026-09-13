@@ -42,6 +42,14 @@ object DebugFixtures {
     }
 
     /** Null unless the fixture is switched on, so callers fall back to the API result. */
+    /**
+     * At the weekend the widget rolls forward to next week, which hides fixture rows dated
+     * today. This marker pins the display to the current week so in-progress states can be
+     * exercised on any day. Marker: files/pin-current-week.
+     */
+    fun pinCurrentWeek(context: Context): Boolean =
+        java.io.File(context.filesDir, "pin-current-week").exists()
+
     fun lecturesOrNull(context: Context): List<LecturesDto>? =
         if (isEnabled(context)) lectures() else null
 
@@ -134,6 +142,18 @@ object DebugFixtures {
                 classroomids = listOf("305"),
                 starttime = hhmm(-25),
                 endtime = hhmm(+35),
+                teacherids = listOf("M. Gžegoževskis")
+            ),
+            // In progress and ending two minutes after the fixture loads: exercises the "<5m"
+            // countdown and lets the re-render chain be watched crossing an end time.
+            LecturesDto(
+                date = d,
+                uniperiod = "8",
+                classids = listOf("IS24"),
+                subjectid = "Testinis dalykas (baigiasi)",
+                classroomids = listOf("310"),
+                starttime = hhmm(-88),
+                endtime = hhmm(+2),
                 teacherids = listOf("M. Gžegoževskis")
             ),
             // In progress right now, and moved: full contrast.

@@ -9,6 +9,15 @@
     <string name="widget_week_parity">%1$s sav.</string>
 
     <string name="widget_today">šiandien</string>
+    <!-- "one" is 1, 21, 31 ...; "few" 2-9, 22-29 ...; "other" 0, 10-20, 30 ... - every
+         form carries the number. "many" is fractions only and never hit with a count. -->
+    <plurals name="day_lessons">
+        <item quantity="one">%d paskaita</item>
+        <item quantity="few">%d paskaitos</item>
+        <item quantity="many">%d paskaitos</item>
+        <item quantity="other">%d paskaitų</item>
+    </plurals>
+    <string name="widget_online">Nuotoliu</string>
 
     <string name="widget_room">%1$s aud.</string>
     <string name="widget_period">%1$s pask.</string>

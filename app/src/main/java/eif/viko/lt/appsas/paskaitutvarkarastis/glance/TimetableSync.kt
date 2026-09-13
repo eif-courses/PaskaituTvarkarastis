@@ -226,6 +226,13 @@ object TimetableSync {
         runCatching { ChangeNotifier.notifyNewMatches(context, matched, boundEntities) }
             .onFailure { Log.w(TAG, "Could not raise change notification", it) }
 
+        // While a lecture is in progress the tint and muting should not have to wait for
+        // the next 15-minute sync: a best-effort, network-free re-render chain runs until
+        // the lecture ends (see RefreshChain for why it is only best effort). Never affects
+        // the sync outcome.
+        runCatching { RefreshChain.schedule(context) }
+            .onFailure { Log.w(TAG, "Could not schedule the re-render chain", it) }
+
         return when {
             // Retry only when every widget failed; a partial failure still put something on
             // screen, so re-fetching for all of them would spend battery for little gain.

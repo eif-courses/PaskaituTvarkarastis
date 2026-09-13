@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors WidgetPalette for the one place Glance does not paint: the initialLayout shown
+     by the host between a widget drop and the first render. Keep in step with the object. -->
+<resources>
+    <color name="widget_surface">#FBFCFD</color>
+    <color name="widget_text_secondary">#5D6470</color>
+</resources>
