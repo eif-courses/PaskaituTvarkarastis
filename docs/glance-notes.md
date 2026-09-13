@@ -84,10 +84,14 @@ The header's I / II parity is derived in `WeekParity` from an anchor: one Monday
 week's parity, counted forward in plain 7-day steps on epoch days. It is **not** read from
 `/timetable/currentweek` for display.
 
-Why: that endpoint is (ISO week + a Firebase node) % 2, and the node was changed on a
-Thursday once, so the same calendar week rendered as "II" on Wednesday and "I" on
-Thursday. Parity is the one thing on the header that gets read, so it must not depend on
-a value that can change mid-week.
+Why: that endpoint is (ISO week + the Firebase node `savaite`) % 2. Observed values show
+`savaite` is the department's *own* parity toggle (0 in the week of 08-31 = I, 1 in the
+week of 09-07 = II, both matching the official timetable), so adding the ISO week to it
+double-counts: in odd ISO weeks the endpoint returns the opposite of the truth (09-13:
+`savaite`=1, endpoint=0). It was also edited mid-week once. Parity is the one thing on the
+header that gets read, so it must not depend on that value. The `Parity disagreement`
+warning therefore fires in every odd ISO week until the backend is fixed to return
+`savaite` directly.
 
 **The anchor is a per-term constant.** If the header drifts from the official timetable,
 `WeekParity.ANCHOR_MONDAY` / `ANCHOR_PARITY` is what needs updating - a new term, or a
@@ -96,6 +100,31 @@ a `Parity disagreement` warning when the two differ, which is the cue to look he
 
 Epoch-day arithmetic rather than ISO week numbers on purpose: 2026 has an ISO week 53, so
 ISO arithmetic gives the weeks of 2026-12-28 and 2027-01-04 the same parity.
+
+## 5. Period times are an institutional constant the feed does not carry
+
+The feed is an aSc Timetables export. A double lecture is one card with the block's outer
+times, `uniperiod` = its first period and `durationperiods` = how many it spans (about a
+fifth of all records). The widget keeps the block as one row - it is the department's card -
+and labels it "Periods 2–3" from those two fields (`PeriodLabel`). The 45-minute break
+inside such a block is therefore not shown; that is accepted.
+
+If a row per period is ever wanted, the inner boundaries are not in the record. They come
+from VIKO's fixed period grid, pinned here from the blocks the feed itself produces:
+
+| period | time          |
+|--------|---------------|
+| 1      | 08:30 – 10:00 |
+| 2      | 10:15 – 11:45 |
+| 3      | 12:30 – 14:00 |
+| 4      | 14:15 – 15:45 |
+| 5      | 16:00 – 17:30 |
+| 6      | 17:45 – 19:15 |
+| 7      | 19:30 – 21:00 |
+
+Like the parity anchor in §4 it is a per-institution constant, not data. Splitting would
+also change change-matching: a cancellation filed under a block's first period would then
+hit only that period's row.
 
 ## Related, cheaper to remember
 

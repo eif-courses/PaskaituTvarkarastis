@@ -15,9 +15,9 @@ package eif.viko.lt.appsas.paskaitutvarkarastis.glance
  * drifts from the official timetable, this pair is what changed: a new term, or a break
  * that the department did not count as a week.
  *
- * Current anchor: autumn term 2026/27. The week of 2026-08-31 was rendered as "II"
- * throughout that week from the backend's original data; if VIKO counts it as "I", flip
- * [ANCHOR_PARITY] to 0 and nothing else.
+ * Current anchor: autumn term 2026/27. The week of 2026-08-31 is "I" at VIKO (confirmed
+ * by the user against the official timetable on 2026-09-13: the week of 09-14 is "I"),
+ * so the term alternates I, II, I ... from 08-31.
  *
  * Arithmetic is on epoch days, not ISO week numbers, so a year boundary (2026 has an ISO
  * week 53) changes nothing. Kept free of Android and java.time so it runs on API 23 and
@@ -29,7 +29,7 @@ object WeekParity {
     const val ANCHOR_MONDAY = "2026-08-31"
 
     /** Parity of the anchor week: 0 renders as "I", 1 as "II". */
-    const val ANCHOR_PARITY = 1
+    const val ANCHOR_PARITY = 0
 
     /** Parity (0 or 1) of the week containing [isoDate]; any day of the week gives the same. */
     fun of(isoDate: String): Int =

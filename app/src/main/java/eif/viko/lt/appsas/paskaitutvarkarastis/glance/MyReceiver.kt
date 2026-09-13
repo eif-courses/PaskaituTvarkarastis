@@ -894,8 +894,12 @@ object TimetableWidget : GlanceAppWidget() {
             lecture.physicalRooms().joinToString(", ")
                 .takeIf { it.isNotBlank() && !cancelled }
                 ?.let { context.getString(R.string.widget_room, it) },
-            lecture.uniperiod.trim().takeIf { it.isNotBlank() }
-                ?.let { context.getString(R.string.widget_period, it) }
+            // A multi-period card says so: "Periods 2–3", never "Period 2" for a block of two.
+            // The block times stay as the department's card has them.
+            PeriodLabel.rangeOrNull(lecture.uniperiod, lecture.durationperiods)
+                ?.let { context.getString(R.string.widget_periods, it) }
+                ?: lecture.uniperiod.trim().takeIf { it.isNotBlank() }
+                    ?.let { context.getString(R.string.widget_period, it) }
         ).joinToString(" · ")
 
     /**

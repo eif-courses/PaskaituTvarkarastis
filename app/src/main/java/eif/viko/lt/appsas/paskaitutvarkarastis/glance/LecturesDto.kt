@@ -12,5 +12,10 @@ data class LecturesDto(
     val subjectid: String ="",
     val teacherids: List<String> = emptyList(),
     val type: String = "",
-    val uniperiod: String=""
+    val uniperiod: String="",
+    /**
+     * How many consecutive periods this card spans; the feed omits it for a single period
+     * and older cached JSON never had it, so it is nullable and null means one.
+     */
+    val durationperiods: Int? = null
 )

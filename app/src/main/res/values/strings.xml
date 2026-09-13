@@ -16,6 +16,8 @@
     <!-- Lesson row. Word order differs per language, so these are formats, not suffixes. -->
     <string name="widget_room">Room %1$s</string>
     <string name="widget_period">Period %1$s</string>
+    <!-- A card spanning consecutive periods; the argument is a range such as "2–3". -->
+    <string name="widget_periods">Periods %1$s</string>
     <string name="widget_moved_to">→ Room %1$s</string>
     <!-- Display text for a cancelled lecture. Matching against the feed's own marker
          happens on ChangeMatcher.CANCELLED_MARKER and is never translated. -->

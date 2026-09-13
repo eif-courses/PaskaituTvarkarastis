@@ -12,6 +12,7 @@
 
     <string name="widget_room">%1$s aud.</string>
     <string name="widget_period">%1$s pask.</string>
+    <string name="widget_periods">%1$s pask.</string>
     <string name="widget_moved_to">→ %1$s aud.</string>
     <string name="lesson_cancelled">Paskaitos nėra</string>
 
