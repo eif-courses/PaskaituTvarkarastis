@@ -18,8 +18,8 @@ android {
         // nothing below 26 ever rendered the widget. Raised from a nominal 23 on 2026-09-03.
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.2"
+        versionCode = 3
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
