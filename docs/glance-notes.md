@@ -109,8 +109,10 @@ fifth of all records). The widget keeps the block as one row - it is the departm
 and labels it "Periods 2–3" from those two fields (`PeriodLabel`). The 45-minute break
 inside such a block is therefore not shown; that is accepted.
 
-If a row per period is ever wanted, the inner boundaries are not in the record. They come
-from VIKO's fixed period grid, pinned here from the blocks the feed itself produces:
+The grid lives in `PeriodGrid` and is used for one thing: a change record that puts a
+lecture into a slot where the timetable has none (`AddedLectures`, a "new lecture" row).
+If a row per period is ever wanted, the inner boundaries are not in the record either;
+they come from the same grid, pinned from the blocks the feed itself produces:
 
 | period | time          |
 |--------|---------------|
@@ -125,6 +127,29 @@ from VIKO's fixed period grid, pinned here from the blocks the feed itself produ
 Like the parity anchor in §4 it is a per-institution constant, not data. Splitting would
 also change change-matching: a cancellation filed under a block's first period would then
 hit only that period's row.
+
+## 5b. A change can describe a lecture the timetable does not have
+
+The department expresses a reschedule as two records: "Paskaitos nėra" in the old slot and
+a named record (teacher + room) in the new one. The widget matched changes *onto* feed
+lectures by date, period and group, so the first struck the lecture out and the second,
+landing in a slot with nothing in it, was silently dropped - the moved lecture vanished.
+In the archive, 70 of 531 named records are this pattern. Worse, on a group widget the
+second record matched whatever other lecture the feed had in that slot and marked *it* as
+moved.
+
+`AddedLectures` now turns such a record into a row of its own, status `ADDED`, green, the
+teacher's name as the title (the record carries no subject), times from `PeriodGrid`. A
+named record whose slot *is* occupied stays a room change on that row. The row carries
+`type = "added"`, which is how `LessonRow` knows not to read the matching record as a room
+change. Teacher names are compared with titles stripped on both sides, case-insensitively:
+the feed says "Doc. L. Gžegoževskė", the record says "dr. L. Gžegoževskė".
+
+A named record only decorates a lecture taught by the teacher it names (`ChangeMatcher`
+`teacherMatches`). On the real PI26 Friday the period-2 slot was already Kubilinskienė's;
+the record naming Gžegoževskė there is a second, parallel lecture, and before this rule
+the group widget showed it as "→ Room 222" on Kubilinskienė's row. A cancellation still
+applies to whatever is in the slot, and a lecture with no teacher on it cannot disagree.
 
 ## 6. A delayed WorkManager request is not a timer on Android 14+
 

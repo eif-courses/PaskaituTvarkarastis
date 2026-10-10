@@ -140,14 +140,21 @@ object ChangeNotifier {
      * nothing when truncated and separates two changes to the same subject on one day.
      */
     private fun describe(context: Context, match: MatchedChange, showEntity: Boolean): String {
-        val subject = match.lecture.subjectid.trim().ifBlank {
-            context.getString(R.string.notif_lecture_fallback)
-        }
-        val what = when (ChangeMatcher.statusOf(match.change)) {
+        val subject = if (match.lecture.type == AddedLectures.TYPE) {
+            match.lecture.classids.joinToString(", ")
+        } else {
+            match.lecture.subjectid.trim()
+        }.ifBlank { context.getString(R.string.notif_lecture_fallback) }
+        val status = if (match.lecture.type == AddedLectures.TYPE) ChangeStatus.ADDED
+                     else ChangeMatcher.statusOf(match.change)
+        val what = when (status) {
             ChangeStatus.CANCELLED -> context.getString(R.string.lesson_cancelled)
             ChangeStatus.CHANGED -> context.getString(
                 R.string.widget_moved_to, match.change.auditorija.trim()
             )
+            // The row's title is the teacher; the subject is unknown, so the line says the
+            // group instead: "New lecture · PI26 · 10-16 10:15".
+            ChangeStatus.ADDED -> context.getString(R.string.lesson_added)
         }
         val prefix = if (showEntity && match.entityLabel.isNotBlank()) {
             match.entityLabel.withoutAcademicTitle() + ": "

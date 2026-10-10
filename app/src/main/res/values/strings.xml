@@ -30,6 +30,9 @@
     <!-- Display text for a cancelled lecture. Matching against the feed's own marker
          happens on ChangeMatcher.CANCELLED_MARKER and is never translated. -->
     <string name="lesson_cancelled">Cancelled</string>
+    <!-- A lecture that exists only in the change feed: a named record in a slot where the
+         timetable has nothing, i.e. a lecture moved or added by the department. -->
+    <string name="lesson_added">New lecture</string>
 
     <!-- List-body states -->
     <string name="widget_loading">Loading…</string>

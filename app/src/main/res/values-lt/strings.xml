@@ -24,6 +24,7 @@
     <string name="widget_periods">%1$s pask.</string>
     <string name="widget_moved_to">→ %1$s aud.</string>
     <string name="lesson_cancelled">Paskaitos nėra</string>
+    <string name="lesson_added">Nauja paskaita</string>
 
     <string name="widget_loading">Kraunama…</string>
     <string name="widget_no_timetable_selected">Tvarkaraštis nepasirinktas</string>

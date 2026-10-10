@@ -452,11 +452,14 @@ class MainActivity : ComponentActivity() {
         val background = when (status) {
             ChangeStatus.CANCELLED -> Color(0xFFDC2626)
             ChangeStatus.CHANGED -> Color(0xFFFACC15)
+            // The in-app list never synthesises added rows; statusOf never returns this.
+            ChangeStatus.ADDED -> Color(0xFF2E7D4F)
             null -> MaterialTheme.colorScheme.surfaceVariant
         }
         val foreground = when (status) {
             ChangeStatus.CANCELLED -> Color.White
             ChangeStatus.CHANGED -> Color.Black
+            ChangeStatus.ADDED -> Color.White
             null -> MaterialTheme.colorScheme.onSurfaceVariant
         }
 

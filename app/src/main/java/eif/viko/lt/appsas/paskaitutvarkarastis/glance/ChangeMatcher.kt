@@ -6,7 +6,9 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-enum class ChangeStatus { CHANGED, CANCELLED }
+/** [ADDED] is never produced by [ChangeMatcher.statusOf]; it is a row-level status for
+ * lectures synthesised by [AddedLectures] from a named record in an empty slot. */
+enum class ChangeStatus { CHANGED, CANCELLED, ADDED }
 
 object ChangeMatcher {
 
@@ -70,8 +72,24 @@ object ChangeMatcher {
         changes.firstOrNull { change ->
             normalizeDate(change.date) == lecture.date.trim() &&
                 change.paskaita.trim() == lecture.uniperiod.trim() &&
-                groupMatches(lecture, change)
+                groupMatches(lecture, change) &&
+                teacherMatches(lecture, change)
         }
+
+    /**
+     * A cancellation applies to whatever is in the slot. A named record applies only to a
+     * lecture taught by the teacher it names: the department puts another teacher's
+     * lecture into an occupied slot (a parallel or rescheduled one), and reading that as a
+     * room change of the lecture already there would decorate the wrong row. Such a record
+     * becomes a lecture of its own instead - see AddedLectures. A lecture with no teacher
+     * on it cannot disagree, so it still matches.
+     */
+    private fun teacherMatches(lecture: LecturesDto, change: ChangeDto): Boolean {
+        if (statusOf(change) == ChangeStatus.CANCELLED) return true
+        val named = change.destytojas.trim()
+        if (named.isEmpty() || lecture.teacherids.isEmpty()) return true
+        return lecture.teacherids.any { TeacherName.same(it, named) }
+    }
 
     /**
      * A cancellation shows up two ways: a dash for the room, or the marker written into the

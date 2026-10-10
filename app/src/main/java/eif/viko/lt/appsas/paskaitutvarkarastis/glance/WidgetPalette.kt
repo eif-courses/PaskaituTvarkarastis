@@ -48,6 +48,12 @@ object WidgetPalette {
      */
     val moved = pair(0xFF9E6210, 0xFFEFAF52)
 
+    /**
+     * Added: the bar and the "New lecture" line on a row that exists only in the change feed.
+     * Green as on the department's own board. 4.9:1 light, 9.6:1 dark.
+     */
+    val added = pair(0xFF2E7D4F, 0xFF7FD4A0)
+
     /** In-progress row wash. Unchanged from the original tuning. */
     val inProgressTint = pair(0xFFE9E6EE, 0xFF2B2A30)
 

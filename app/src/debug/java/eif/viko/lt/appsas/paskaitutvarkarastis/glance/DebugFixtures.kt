@@ -207,6 +207,15 @@ object DebugFixtures {
                 grupe = "<b>KS25</b>",
                 auditorija = "320",
                 destytojas = "M. Gžegoževskis"
+            ),
+            // A named record in a slot no fixture lecture occupies: rendered as a new lecture
+            // at the period grid's times. The title differs from the bound label on purpose.
+            ChangeDto(
+                date = d,
+                paskaita = "7",
+                grupe = "<b>PI26</b>",
+                auditorija = "222",
+                destytojas = "dr. M. Gžegoževskis"
             )
         )
     }

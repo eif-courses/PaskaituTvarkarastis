@@ -213,7 +213,8 @@ object TimetableSync {
                     Log.w(TAG, "Notification week fetch failed for ${target.entityId}", it)
                     emptyList()
                 }
-                lectures.forEach { lecture ->
+                val added = AddedLectures.synthesize(changes, lectures, target.entityType, target.label)
+                (lectures + added).forEach { lecture ->
                     ChangeMatcher.findFor(lecture, changes)?.let { change ->
                         matched += MatchedChange(lecture, change, target.label)
                     }

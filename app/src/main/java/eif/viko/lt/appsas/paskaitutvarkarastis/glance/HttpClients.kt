@@ -3,7 +3,6 @@ package eif.viko.lt.appsas.paskaitutvarkarastis.glance
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
@@ -21,16 +20,19 @@ object HttpClients {
             .build()
     }
 
+    // Gson on both. The timetable client was Moshi until Retrofit 3 / Moshi 1.15, which
+    // refuse Kotlin data classes without a Kotlin adapter (and its kotlin-reflect weight);
+    // Gson uses the no-arg constructor Kotlin generates for all-default data classes, so
+    // the DTO defaults survive missing fields. Firebase was Gson already: it serves
+    // `paskaita` as either a string or a number, and Moshi throws on the numeric case.
     private val timetableRetrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(TimetableApi.BASE_URL)
             .client(okHttp)
-            .addConverterFactory(MoshiConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    // Gson, not Moshi: Firebase serves `paskaita` as either a string or a number, and Moshi
-    // throws on the numeric case. The converter split is the reason these stay separate.
     private val firebaseRetrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(FirebaseApi.BASE_URL)

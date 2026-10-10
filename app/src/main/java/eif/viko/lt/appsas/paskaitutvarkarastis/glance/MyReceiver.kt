@@ -298,12 +298,23 @@ object TimetableWidget : GlanceAppWidget() {
                     val weekLectures = if (neverSynced) {
                         emptyList()
                     } else {
-                        runCatching {
+                        val feed = runCatching {
                             gson.fromJson(count, Array<LecturesDto>::class.java).orEmpty().toList()
                         }.getOrDefault(emptyList())
                             .filterNot { it.isPlaceholder() }
+                        // A named change record in a slot the timetable leaves empty is a
+                        // lecture the department moved or added: it gets a row of its own.
+                        val added = if (highlightChanges) {
+                            AddedLectures.synthesize(changes, feed, entityType, entityLabel)
+                        } else {
+                            emptyList()
+                        }
+                        (feed + added)
                             .filter { SubgroupFilter.matches(it, subgroup) }
                             .filter { it.date in monday..sunday }
+                            // Stable, so the feed's own order survives within a time slot;
+                            // only the synthesised rows need placing.
+                            .sortedWith(compareBy({ it.date }, { it.starttime }))
                     }
 
                     // Date-based, so today's lectures stay visible all day; greying out the
@@ -712,7 +723,10 @@ object TimetableWidget : GlanceAppWidget() {
         finished: Boolean,
         inProgress: Boolean
     ) {
-        val status = change?.let { ChangeMatcher.statusOf(it) }
+        // An added row is matched by the very record that created it, which would read as
+        // a room change; its own marker wins.
+        val added = lecture.type == AddedLectures.TYPE
+        val status = if (added) ChangeStatus.ADDED else change?.let { ChangeMatcher.statusOf(it) }
         val cancelled = status == ChangeStatus.CANCELLED
 
         // Precedence: a cancelled lecture during its own slot is cancelled, not in progress -
@@ -734,6 +748,7 @@ object TimetableWidget : GlanceAppWidget() {
         val accent = when (status) {
             ChangeStatus.CANCELLED -> WidgetPalette.cancelled
             ChangeStatus.CHANGED -> WidgetPalette.moved
+            ChangeStatus.ADDED -> WidgetPalette.added
             null -> WidgetPalette.neutralBar
         }
         val titleColor = if (muted) {
@@ -882,15 +897,15 @@ object TimetableWidget : GlanceAppWidget() {
                         maxLines = 1
                     )
                 }
-                if (change != null) {
+                if (change != null || added) {
                     Text(
-                        text = if (cancelled) {
+                        text = when {
+                            added -> LocalContext.current.getString(R.string.lesson_added)
                             // Display only. Matching uses ChangeMatcher.CANCELLED_MARKER, the
                             // department's own Lithuanian marker, and is never translated.
-                            LocalContext.current.getString(R.string.lesson_cancelled)
-                        } else {
-                            LocalContext.current.getString(
-                                R.string.widget_moved_to, change.auditorija.trim()
+                            cancelled -> LocalContext.current.getString(R.string.lesson_cancelled)
+                            else -> LocalContext.current.getString(
+                                R.string.widget_moved_to, change!!.auditorija.trim()
                             )
                         },
                         style = TextStyle(
