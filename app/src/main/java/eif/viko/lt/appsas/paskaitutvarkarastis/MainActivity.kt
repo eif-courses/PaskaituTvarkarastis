@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -181,7 +182,16 @@ class MainActivity : ComponentActivity() {
             loading = false
         }
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        // The activity is drawn edge-to-edge (default since activity-compose 1.13), so the
+        // root keeps clear of the status and navigation bars itself.
+        // Background before the padding, so the bar areas show the Compose surface rather
+        // than the window background (which is the light platform theme's, even in dark).
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .systemBarsPadding()
+        ) {
 
             TabRow(selectedTabIndex = mode.ordinal) {
                 PickerMode.values().forEach { candidate ->

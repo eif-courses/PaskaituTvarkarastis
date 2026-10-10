@@ -57,8 +57,9 @@ fun PaskaituTvarkarastisTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            // Edge-to-edge: the bar is transparent over the app's own surface, so the icons
+            // must be dark on a light surface and light on a dark one.
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
